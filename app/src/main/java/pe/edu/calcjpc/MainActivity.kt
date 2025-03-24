@@ -2,6 +2,7 @@ package pe.edu.calcjpc
 
 import android.net.InetAddresses
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -37,6 +38,10 @@ import androidx.compose.ui.unit.sp
 import pe.edu.calcjpc.ui.theme.CalcjpcTheme
 import pe.edu.calcjpc.ui.theme.Purple200
 import pe.edu.calcjpc.ui.theme.textColor
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,24 +49,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CalcUPeU()
-           /* CalcjpcTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }*/
         }
     }
-
-
 }
 
 fun isNumeric(toCheck: String): Boolean {
     val regex = "-?[0-9]+(\\.[0-9]+)?".toRegex()
     return toCheck.matches(regex)
 }
+
 @Composable()
 fun ButtonX(
     modifier: Modifier,
@@ -74,7 +70,9 @@ fun ButtonX(
     onOldValueChange: (String) -> Unit,
     oldTextState: String,
     op:String
+
 ) {
+
     Column(modifier = modifier.wrapContentSize(Alignment.Center)) {
         Box(
             modifier = modifier
@@ -94,50 +92,82 @@ fun ButtonX(
                             valor += valuex
                             onValueChange.invoke(valor)
                         }
-                        if (valuex.equals("+") || valuex.equals("-") || valuex.equals("*") || valuex.equals(
-                                "/"
-                            ) || valuex.equals("%")
-                        ) {
-                            onOpChange.invoke(valuex)
-                            onOldValueChange.invoke(textState)
-                            onIsNewOpChange.invoke(true)
-                        }
-                        if (valuex.equals("AC")) {
-                            onValueChange.invoke("0")
-                            onIsNewOpChange.invoke(true)
-                        }
-                        if (valuex.equals(".")) {
-                            var dot = textState
-                            if (isNewOp) {
-                                dot = ""
-                                onValueChange.invoke(dot)
-                            }
-                            onIsNewOpChange.invoke(false)
-                            if (!dot.contains(".")) {
-                                dot += "."
-                                onValueChange.invoke(dot)
-                            }
-                        }
-                        if (valuex.equals("=")) {
-                            if (oldTextState.isNotEmpty()) {
-                                var finalNumber = 0.0
-                                when (op) {
-                                    "*" -> {
-                                        finalNumber = oldTextState.toDouble() * textState.toDouble()
-                                    }
-                                    "/" -> {
-                                        finalNumber = oldTextState.toDouble() / textState.toDouble()
-                                    }
-                                    "+" -> {
-                                        finalNumber = oldTextState.toDouble() + textState.toDouble()
-                                    }
-                                    "-" -> {
-                                        finalNumber = oldTextState.toDouble() - textState.toDouble()
-                                    }
-                                }
-                                onValueChange.invoke(finalNumber.toString())
+                        when (valuex) {
+                            "+", "-", "*", "/", "%", "^" -> {
+                                onOpChange.invoke(valuex)
+                                onOldValueChange.invoke(textState)
                                 onIsNewOpChange.invoke(true)
                             }
+                            "AC" -> {
+                                onValueChange.invoke("0")
+                                onIsNewOpChange.invoke(true)
+                            }
+                            "." -> {
+                                var dot = textState
+                                if (isNewOp) {
+                                    dot = ""
+                                    onValueChange.invoke(dot)
+                                }
+                                onIsNewOpChange.invoke(false)
+                                if (!dot.contains(".")) {
+                                    dot += "."
+                                    onValueChange.invoke(dot)
+                                }
+                            }
+                            "√" -> {
+                                val result = sqrt(textState.toDouble())
+                                onValueChange.invoke(result.toString())
+                                onIsNewOpChange.invoke(true)
+                            }
+                            "1/x" -> {
+                                if (textState.toDouble() == 0.0) {
+                                    onValueChange.invoke("Error")
+                                } else {
+                                    val result = 1 / textState.toDouble()
+                                    onValueChange.invoke(result.toString())
+                                }
+                                onIsNewOpChange.invoke(true)
+                            }
+                            "% " -> {
+                                val result = textState.toDouble() / 100
+                                onValueChange.invoke(result.toString())
+                                onIsNewOpChange.invoke(true)
+                            }
+
+                            "π" -> {
+                                onValueChange.invoke(PI.toString())
+                                onIsNewOpChange.invoke(true)
+                            }
+                            "|x|" -> {
+                                val result = abs(textState.toDouble())
+                                onValueChange.invoke(result.toString())
+                                onIsNewOpChange.invoke(true)
+                            }
+                            "=" -> {
+                                if (oldTextState.isNotEmpty()) {
+                                    var finalNumber: Double? = null
+                                    when (op) {
+                                        "*" -> finalNumber = oldTextState.toDouble() * textState.toDouble()
+                                        "/" -> {
+                                            if (textState.toDouble() == 0.0) {
+                                                onValueChange.invoke("Error") // Evita la división entre 0
+                                            } else {
+                                                finalNumber = oldTextState.toDouble() / textState.toDouble()
+                                            }
+                                        }
+                                        "+" -> finalNumber = oldTextState.toDouble() + textState.toDouble()
+                                        "-" -> finalNumber = oldTextState.toDouble() - textState.toDouble()
+                                        "^" -> finalNumber = oldTextState.toDouble().pow(textState.toDouble())
+                                    }
+
+                                    // Solo actualizar si no hubo error
+                                    if (finalNumber != null) {
+                                        onValueChange.invoke(finalNumber.toString())
+                                        onIsNewOpChange.invoke(true)
+                                    }
+                                }
+                            }
+
                         }
                     }
                 )
@@ -155,10 +185,9 @@ fun ButtonX(
                     .wrapContentSize(Alignment.Center)
             )
         }
+
     }
-
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalculatorTextField(
@@ -185,7 +214,6 @@ fun CalculatorTextField(
         )
     }
 }
-
 @Composable
 fun CalculatorFirstRow(
     textState: String,
@@ -217,7 +245,7 @@ fun CalculatorFirstRow(
     }
 }
 
-@Preview(showBackground = true)
+
 @Composable
 fun CalcUPeU() {
     CalcjpcTheme() {
@@ -232,12 +260,13 @@ fun CalcUPeU() {
                 onValueChange = { textState = it }
             )
             Column(modifier = Modifier.fillMaxSize()) {
-                var listA = listOf<String>("AC", ".", "%", "/")
-                var listB = listOf<String>("7", "8", "9", "*")
-                var listC = listOf<String>("4", "5", "6", "+")
-                var listD = listOf<String>("1", "2", "3", "-")
-                var listE = listOf<String>("0", "=")
-                var listaCompleta = listOf<List<String>>(listA, listB, listC, listD, listE)
+                var listA = listOf("AC", "√", "1/x", "%")
+                var listB = listOf("π", "|x|", "^", "/")
+                var listC = listOf("7", "8", "9", "*")
+                var listD = listOf("4", "5", "6", "+")
+                var listE = listOf("1", "2", "3", "-")
+                var listF = listOf("0", "=")
+                var listaCompleta = listOf(listA, listB, listC, listD, listE, listF)
                 listaCompleta.forEach {
                     CalculatorFirstRow(
                         isNewOp = isNewOp,
@@ -246,31 +275,14 @@ fun CalcUPeU() {
                         onIsNewOpChange = { isNewOp = it },
                         onOpChange = { op = it },
                         onOldValueChange = { oldTextState = it },
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
                         op = op,
                         oldTextState = oldTextState,
                         data = it
                     )
                 }
             }
+
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    CalcjpcTheme {
-        Greeting("World")
     }
 }
